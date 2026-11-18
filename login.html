@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>sign in</title>
+		<link rel="stylesheet" href="styles.css">
+		<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+	</head>
+
+	<body>
+
+    <div = class="container">
+
+        <h1>Register</h1>
+
+	    <input type="text" placeholder = "Username"><br>
+	    <input type="pass" placeholder = "password"><br>
+        
+        <button type="pass" onclick="clickButton( document.getElementById('password').value)">register</button>
+    
+        <br><br>
+    
+        <a href="mainpage.html">back to login</a>
+    </div>
+    </body>
+
+
+    <script>
+
+    const clickButton = (a,b) =>{
+
+		const postData = {
+			usernamee:a,
+			password:b,	
+    		
+			};
+
+			const data = {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(postData)
+			}
+	
+			async function fetchData() {
+				try {
+					const response = await fetch('http://127.0.0.1:8000/surveynimo',data);
+					console.log(response)
+					if (response.data.status =='success') {
+						document.location.href = 'profile.html.html';
+					} else {
+						throw new Error('Failed to fetch data');
+					}
+				} catch (error) {
+					console.error('Error:', error); 
+				}
+			}
+
+			fetchData()
+	
+		}
+
+		</script>
+	</body>
+</html>
