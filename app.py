@@ -1,24 +1,10 @@
-from sqlmodel import Session , select
-
-from database import create_db_and_tables, engine
-from models import Employee  ,department
-
+from database import create_db_and_tables
+from models import User  # Load the User table before creating the database.
 
 
 def main():
     create_db_and_tables()
-    # what you want to do here
-
-    
-    emp1 = Employee(  name='Clark', dept='Sales')
-    emp2 = Employee(  name='Dave', dept='Accounting')
-    emp3 = Employee(  name='Ava', dept='Sales')
-
-    with Session(engine) as session:
-        session.add(emp1)
-        session.add(emp2)
-        session.add(emp3)
-        session.commit()
+    print("User table is ready.")
 
 
 if __name__ == "__main__":
