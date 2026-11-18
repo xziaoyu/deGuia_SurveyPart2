@@ -1,65 +1,64 @@
-<!DOCTYPE html>
-<html>
-	<head>
-		<title>sign in</title>
-		<link rel="stylesheet" href="styles.css">
-		<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-	</head>
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Log in</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <h1>Log in</h1>
 
-	<body>
+    <form action="/login" method="post" data-next="/main">
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" maxlength="80" required>
 
-    <div = class="container">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password"
+             autocomplete="current-password" maxlength="128" required>
 
-        <h1>Register</h1>
+      <button type="submit">Log in</button>
+      <a class="button" href="/register">Register</a>
+    </form>
 
-	    <input type="text" placeholder = "Username"><br>
-	    <input type="pass" placeholder = "password"><br>
-        
-        <button type="pass" onclick="clickButton( document.getElementById('password').value)">register</button>
-    
-        <br><br>
-    
-        <a href="mainpage.html">back to login</a>
-    </div>
-    </body>
+    <p role="status"></p>
+  </main>
 
+  <script>
+    const form = document.querySelector("form");
+    const statusMessage = document.querySelector("[role='status']");
 
-    <script>
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const submitButton = form.querySelector("button[type='submit']");
+      statusMessage.textContent = "";
+      submitButton.disabled = true;
 
-    const clickButton = (a,b) =>{
+      try {
+        const response = await fetch(form.action, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(Object.fromEntries(new FormData(form)))
+        });
 
-		const postData = {
-			usernamee:a,
-			password:b,	
-    		
-			};
+        const result = await response.json();
+        if (!response.ok) {
+          statusMessage.textContent = typeof result.detail === "string"
+            ? result.detail
+            : "Check that all required fields are filled in correctly.";
+          return;
+        }
 
-			const data = {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify(postData)
-			}
-	
-			async function fetchData() {
-				try {
-					const response = await fetch('http://127.0.0.1:8000/surveynimo',data);
-					console.log(response)
-					if (response.data.status =='success') {
-						document.location.href = 'profile.html.html';
-					} else {
-						throw new Error('Failed to fetch data');
-					}
-				} catch (error) {
-					console.error('Error:', error); 
-				}
-			}
+        window.location.assign(form.dataset.next);
+      } catch {
+        statusMessage.textContent = "Could not reach the server. Try again.";
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
 
-			fetchData()
-	
-		}
-
-		</script>
-	</body>
+    if (window.location.search === "?registered=1") {
+      statusMessage.textContent = "Account created. You can now log in.";
+    }
+  </script>
+</body>
 </html>

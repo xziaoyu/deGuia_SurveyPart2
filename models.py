@@ -1,20 +1,16 @@
-from sqlmodel import Field , SQLModel
+from pydantic import BaseModel, Field as FormField
+from sqlmodel import Field, SQLModel
 
-class Surveynimo(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    name: str
-    age: str
-    place_of_birth: str
-    favorite_food: str
-    are_you_gay: str
-    hobby1: str
-    hobby2: str
-    hobby3: str
-    Current_school: str
-    Useless_skill: str
 
 class User(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    userr: str
-    passwordd: str
-       
+    username_hash: str = Field(primary_key=True)
+    password_hash: str
+
+
+class LoginForm(BaseModel):
+    username: str = FormField(min_length=1, max_length=80)
+    password: str = FormField(min_length=1, max_length=128)
+
+
+class RegisterForm(LoginForm):
+    confirm_password: str = FormField(min_length=1, max_length=128)

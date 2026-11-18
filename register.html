@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Register</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <h1>Register</h1>
+
+    <form action="/register" method="post" data-next="/?registered=1">
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" maxlength="80" required>
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password"
+             autocomplete="new-password" maxlength="128" required>
+
+      <label for="confirm_password">Confirm password</label>
+      <input id="confirm_password" name="confirm_password" type="password"
+             autocomplete="new-password" maxlength="128" required>
+
+      <button type="submit">Register</button>
+    </form>
+
+    <p><a href="/">Back to log in</a></p>
+    <p role="status"></p>
+  </main>
+
+  <script>
+    const form = document.querySelector("form");
+    const statusMessage = document.querySelector("[role='status']");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const submitButton = form.querySelector("button[type='submit']");
+      statusMessage.textContent = "";
+      submitButton.disabled = true;
+
+      try {
+        const response = await fetch(form.action, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(Object.fromEntries(new FormData(form)))
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          statusMessage.textContent = typeof result.detail === "string"
+            ? result.detail
+            : "Check that all required fields are filled in correctly.";
+          return;
+        }
+
+        window.location.assign(form.dataset.next);
+      } catch {
+        statusMessage.textContent = "Could not reach the server. Try again.";
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

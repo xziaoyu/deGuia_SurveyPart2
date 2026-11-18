@@ -1,54 +1,96 @@
-from fastapi import FastAPI
-from sqlmodel import Session , select
 from contextlib import asynccontextmanager
-from database import create_db_and_tables, engine
-from fastapi.middleware.cors import CORSMiddleware
+import hashlib
+import secrets
 
-from models import Surveynimo
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session
+from starlette.middleware.sessions import SessionMiddleware
+
+from database import create_db_and_tables, engine
+from models import LoginForm, RegisterForm, User
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
     yield
 
+
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(SessionMiddleware, secret_key=secrets.token_hex(32))
 
 
-origins = [
-    "http://localhost:3000",  # React development server
-    "https://example.com",    # Production frontend
-    "*"
-] # Define allowed origins (domains that can access your API)
+@app.exception_handler(RequestValidationError)
+async def invalid_form(request, error):
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "Check the form fields."},
+    )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,        # Allow these origins
-    allow_credentials=True,       # Allow cookies, authentication headers
-    allow_methods=["*"],          # Allow all HTTP methods (GET, POST, etc.)
-    allow_headers=["*"],          # Allow all headers
-)
 
+def hash_username(username):
+    username = username.strip()
+    if not username:
+        raise HTTPException(422, "Enter a username.")
+    return hashlib.sha256(username.encode()).hexdigest()
+
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
 
 @app.get("/")
-async def root():
-    return {"message": "HEYY"}
+def show_login():
+    return FileResponse("login.html")
 
 
-@app.get("/surveynimo/{id}")
-async def read_employee(id):
+@app.get("/register")
+def show_register():
+    return FileResponse("register.html")
+
+
+@app.get("/main")
+def show_main(request: Request):
+    if not request.session.get("logged_in"):
+        return RedirectResponse("/", status_code=303)
+    return FileResponse("mainpage.html")
+
+
+@app.get("/styles.css", include_in_schema=False)
+def show_styles():
+    return FileResponse("styles.css", media_type="text/css")
+
+
+@app.post("/register", status_code=201)
+def register(form: RegisterForm):
+    if form.password != form.confirm_password:
+        raise HTTPException(422, "Passwords do not match.")
+
+    user = User(
+        username_hash=hash_username(form.username),
+        password_hash=hash_password(form.password),
+    )
+
     with Session(engine) as session:
-        print(id,'--------------------------------------------------------------')
-        surveynimo = session.get(Surveynimo, id)
-        return {"message": surveynimo}
-    
+        session.add(user)
+        try:
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            raise HTTPException(409, "Username is already registered.")
 
-@app.post("/surveynimo")
-async def root(surveynimo  : Surveynimo):
+    return {"message": "Account created."}
 
+
+@app.post("/login")
+def login(form: LoginForm, request: Request):
     with Session(engine) as session:
-        session.add(surveynimo)
-        session.commit()
-        session.refresh(surveynimo)
-        return {"message": surveynimo}
- 
+        user = session.get(User, hash_username(form.username))
+        if user is None or hash_password(form.password) != user.password_hash:
+            raise HTTPException(401, "Invalid username or password.")
+
+    request.session["logged_in"] = True
+    return {"message": "Logged in."}
